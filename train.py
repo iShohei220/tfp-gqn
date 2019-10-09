@@ -65,6 +65,7 @@ def main(argv):
                                   root=FLAGS.root_path,
                                   mode='test',
                                   batch_size=3,
+                                  context_size=FLAGS.validation_context_size,
                                   custom_frame_size=64,
                                   seed=FLAGS.seed)
 

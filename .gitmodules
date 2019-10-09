@@ -1,0 +1,3 @@
+[submodule "gqn-datasets"]
+	path = gqn-datasets
+	url = https://github.com/iShohei220/gqn-datasets.git

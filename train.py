@@ -40,21 +40,21 @@ flags.DEFINE_enum(
          'mazes'],
         'Dataset')
 flags.DEFINE_string('root_path', None, "Path to dataset's root folder")
-flags.DEFINE_string('log_dir', '/tf/logs/' + datetime.now().strftime('%Y%m%d-%H%M%S'), 'Log directory')
-flags.DEFINE_string('validation_freq', 100,
-                    'How many training epochs to run '
-                    'before a new validation run is performed')
-flags.DEFINE_string('validation_context_size', None,
-                    'Context size in test time')
-flags.DEFINE_string('save_freq', 50000,
-                    'The callback saves the model at end of a batch '
-                    'at which this many samples have been seen since last saving')
+flags.DEFINE_string('logdir', '/tf/logs/' + datetime.now().strftime('%Y%m%d-%H%M%S'), 'Log directory')
+flags.DEFINE_integer('validation_freq', 100,
+                     'How many training epochs to run '
+                     'before a new validation run is performed')
+flags.DEFINE_integer('validation_context_size', None,
+                     'Context size in test time')
+flags.DEFINE_integer('save_freq', 50000,
+                     'The callback saves the model at end of a batch '
+                     'at which this many samples have been seen since last saving')
 flags.DEFINE_integer('seed', None, 'Seed')
 
 def lr_schedule(epoch):
     return max(FLAGS.mu_f + (FLAGS.mu_i - FLAGS.mu_f) * (1 - epoch / FLAGS.n_mu), FLAGS.mu_f)
 
-if __name__ == '__main__':
+def main(argv):
     dataset = data_reader(dataset=FLAGS.D,
                           root=FLAGS.root_path,
                           mode='train',
@@ -64,32 +64,31 @@ if __name__ == '__main__':
     validation_data = data_reader(dataset=FLAGS.D,
                                   root=FLAGS.root_path,
                                   mode='test',
-                                  batch_size=FLAGS.B,
+                                  batch_size=3,
                                   custom_frame_size=64,
-                                  shuffle_buffer_size=256,
                                   seed=FLAGS.seed)
-    
+
     test_inputs, test_target = next(iter(validation_data))
-        
+
     strategy = tf.distribute.MirroredStrategy()
     with strategy.scope():
         model = GQN(FLAGS.representation, FLAGS.shared_core, FLAGS.L)
         optimizer = tfk.optimizers.Adam(
-            learning_rate=mu_i,
+            learning_rate=FLAGS.mu_i,
             beta_1=FLAGS.beta_1,
             beta_2=FLAGS.beta_2,
             epsilon=FLAGS.epsilon)
         negative_log_likelihood = lambda x_q, rv_x_q: -rv_x_q.log_prob(x_q)
         model.compile(optimizer=optimizer, loss=negative_log_likelihood)
-    
-    checkpoint_path = FLAGS.log_dir + '/model/cp-{epoch:07d}.ckpt'
-    callbacks = [tfk.callbacks.TensorBoard(log_dir=FLAGS.log_dir),
+
+    checkpoint_path = FLAGS.logdir + '/model/cp-{epoch:07d}.ckpt'
+    callbacks = [tfk.callbacks.TensorBoard(log_dir=FLAGS.logdir),
                  tfk.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                save_weights_only=True,
                                                verbose=1, save_freq=FLAGS.save_freq),
                  tfk.callbacks.LearningRateScheduler(lr_schedule),
                  PixelVarianceScheduler(FLAGS.sigma_i, FLAGS.sigma_f, FLAGS.n_sigma),
-                 TensorBoardImage(FLAGS.log_dir, test_inputs, test_target, FLAGS.validation_freq)]
+                 TensorBoardImage(FLAGS.logdir, test_inputs, test_target, FLAGS.validation_freq)]
     model.fit(dataset,
               verbose=0,
               epochs=FLAGS.S_max,
@@ -98,3 +97,7 @@ if __name__ == '__main__':
               steps_per_epoch=1,
               validation_steps=1,
               validation_freq=FLAGS.validation_freq)
+
+
+if __name__ == '__main__':
+    app.run(main)

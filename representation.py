@@ -1,4 +1,5 @@
 import tensorflow as tf
+from resblock import TimeDistributedResBlock2D
 
 tfk = tf.keras
 tfkl = tf.keras.layers

@@ -1,2 +1,1 @@
-# tfp-gqn
-Implementation of Generative Query Networks with TensorFlow Probability
+# Implementation of Generative Query Networks with TensorFlow Probability

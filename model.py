@@ -45,12 +45,12 @@ class GQN(tfk.Model):
             if shared_core else [ConvLSTM2DCell(128, 5, strides=1, padding='same') for _ in range(L)]
         self.generation_core = ConvLSTM2DCell(128, 5, strides=1, padding='same')\
             if shared_core else [ConvLSTM2DCell(128, 5, strides=1, padding='same') for _ in range(L)]
-        
+
         self.sigma = 2.0
 
     def call(self, inputs):
         x, v, v_q, x_q = inputs
-        
+
         # Scene encoder
         r = self.phi([x, v])
         r = tf.reduce_sum(r, 1)
@@ -76,7 +76,9 @@ class GQN(tfk.Model):
             # Posterior factor
             q = tfpl.IndependentNormal(
                 [16, 16, 3],
-                activity_regularizer=tfpl.KLDivergenceRegularizer(pi, weight=1.0)
+                activity_regularizer=tfpl.KLDivergenceRegularizer(pi,
+                                                                  use_exact_kl=True,
+                                                                  weight=1.0)
             )(self.eta_e(h_e))
             # Posterior sample
             z = q.sample()

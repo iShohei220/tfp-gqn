@@ -46,7 +46,7 @@ flags.DEFINE_integer('validation_freq', 100,
                      'before a new validation run is performed')
 flags.DEFINE_integer('validation_context_size', None,
                      'Context size in test time')
-flags.DEFINE_integer('save_freq', 50000,
+flags.DEFINE_integer('save_freq', 1800000,
                      'The callback saves the model at end of a batch '
                      'at which this many samples have been seen since last saving')
 flags.DEFINE_integer('seed', None, 'Seed')
@@ -82,10 +82,9 @@ def main(argv):
         negative_log_likelihood = lambda x_q, rv_x_q: -rv_x_q.log_prob(x_q)
         model.compile(optimizer=optimizer, loss=negative_log_likelihood)
 
-    checkpoint_path = FLAGS.logdir + '/model/cp-{epoch:07d}.ckpt'
-    callbacks = [tfk.callbacks.TensorBoard(log_dir=FLAGS.logdir),
+    checkpoint_path = FLAGS.logdir + '/model/gqn_{epoch}.h5'
+    callbacks = [tfk.callbacks.TensorBoard(log_dir=FLAGS.logdir, profile_batch=0),
                  tfk.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-                                               save_weights_only=True,
                                                verbose=1, save_freq=FLAGS.save_freq),
                  tfk.callbacks.LearningRateScheduler(lr_schedule),
                  PixelVarianceScheduler(FLAGS.sigma_i, FLAGS.sigma_f, FLAGS.n_sigma),
